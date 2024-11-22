@@ -150,11 +150,12 @@ class SEDFit:
         if np.isfinite(self.gaiaparams['parallax'][0]):
             d=1000/self.gaiaparams['parallax'][0]
             ed=[(1000/(self.gaiaparams['parallax']+parallax_sigma*self.gaiaparams['parallax_error']))[0],(1000/(self.gaiaparams['parallax']-parallax_sigma*self.gaiaparams['parallax_error']))[0]]
-            ruwe=self.gaiaparams['ruwe'][0]
+            #print(self.gaiaparams.keys())
+            ruwe=1.0 ###self.gaiaparams['ruwe'][0]
             print('Gaia DR3 distance towards this source is ' + str(np.round(d,1)) +' pc')
             print(str(parallax_sigma)+' sigma uncertainty in distance is ' + str(np.round(ed[0],1)) +' - '+str(np.round(ed[1],1)) +' pc' )
             if ruwe<1.4:
-                print('RUWE is ' + str(np.round(ruwe,3)) )
+                print('RUWE is ' + str(np.round(ruwe,3)),  'NOTE: MM this is not downloaded, just fixed...')
             else:
                 print('RUWE is ' + str(np.round(ruwe,3)) +', distance measurement may be unreliable, proceed with caution')
         else:
@@ -630,29 +631,35 @@ class SEDFit:
         match=np.interp(self.gaia['la'], self.la,f)
         return match
     
-    def makeplot(self,file='',getplot=False):
+    def makeplot(self,file='',getplot=False, idx=None):
+        if idx is None: idx=range(len(self.mags))
+        
         plt.rc('font', size=24) 
         fig = plt.figure(figsize=(12,12))
         gs = fig.add_gridspec(2, 1, hspace=0, wspace=0,height_ratios=[3, 1])
         ax=gs.subplots(sharex='col')
         ax[0].errorbar(self.sed["la"]/1e4, self.sed["flux"],
                      yerr=self.sed["eflux"],xerr=self.sed["width"]/1e4,
-                     linestyle='',zorder=4,c='black')
+                       linestyle='',zorder=5,c='black',label='photometry')
         ax[0].set_xscale('log')
-        ax[0].scatter(self.sed["la"]/1e4,self.mags,c='#004488',zorder=5,s=80)
+        ax[0].scatter(self.sed["la"][idx]/1e4,self.mags[idx],c='#004488',zorder=4,s=60,label='model')
+        ax[0].scatter(self.sed["la"]/1e4,self.mags,edgecolor='#004488',facecolor='none',zorder=4,s=60)
+    
         ylims=ax[0].get_ylim()
         
         for i in range(self.nstar):
             ax[0].plot(self.la/1e4,self.fx[i],zorder=0,c='#DDAA33')
         ax[0].plot(self.la/1e4,self.f,zorder=1,c='#BB5566')
-        
+        ax[0].legend(loc='upper right')
+        ax[0].annotate( r'$\chi^2/N = $'+str(np.round(self.getchisq(idx=idx),2)), (0.1,0.1),xycoords='axes fraction' )
         
         ylims1=ax[0].get_ylim()
         
         ax[0].set_ylim(ylims[0],ylims1[1])
         ax[0].set_xlim(0.1,20)
         
-        ax[1].scatter(self.sed["la"]/1e4,self.sed["flux"]-self.mags,zorder=1,c='#004488',s=80)
+        ax[1].scatter(self.sed["la"][idx]/1e4,self.sed["flux"][idx]-self.mags[idx],zorder=1,c='#004488',s=60)
+        ax[1].scatter(self.sed["la"]/1e4,self.sed["flux"]-self.mags,zorder=1,edgecolor='#004488',facecolor='none',s=60)
         ax[1].errorbar(self.sed["la"]/1e4, self.sed["flux"]-self.mags,
                      yerr=self.sed["eflux"],
                      linestyle='',zorder=0,c='black')
@@ -672,6 +679,8 @@ class SEDFit:
         ax[1].xaxis.set_major_locator(ticker.FixedLocator([0.1,0.2,0.5,1,2,5,10]))
         ax[1].set_xticklabels(['0.1','0.2','0.5','1','2','5','10'])
         
+
+        
         if file != '':
             plt.savefig(file, bbox_inches="tight",dpi=150)
         if getplot:
@@ -680,7 +689,7 @@ class SEDFit:
             plt.show()
         
     def getchisq(self,idx=None,gaia=True):
-        if idx==None: idx=range(len(self.mags))
+        if idx is None: idx=range(len(self.mags))
         if (gaia) & (len(self.gaia)>0):
             m=np.append(self.mags[idx],self.spec)
             r=np.append(self.sed['flux'][idx],self.gaia['flux'])
@@ -693,6 +702,7 @@ class SEDFit:
             l=len(idx)
             
         return np.sum(((m-r) / e) ** 2)/(l-1)
+
     
     def getr(self):
         return self.r
