@@ -660,7 +660,11 @@ class SEDFit:
             ax[0].plot(self.la/1e4,self.fx[i],zorder=0,c='#DDAA33')
         ax[0].plot(self.la/1e4,self.f,zorder=1,c='#BB5566')
         ax[0].legend(loc='upper right')
-        ax[0].annotate( r'$\chi^2/N = $'+str(np.round(self.getchisq(idx=idx),2)), (0.1,0.1),xycoords='axes fraction' )
+        ax[0].annotate( r'$\chi^2/N = $'+str(np.round(self.getchisq(idx=idx),2))+'\n'+
+                        r'$A_V$='+str(np.round(self.getav(),2))+'\n'+
+                        r'$T_{\rm eff}$='+str(np.round(self.getteff()[0],2))+'\n'+
+                        r'$\log g$='+str(np.round(self.getlogg()[0],2))
+                        , (0.1,0.1),xycoords='axes fraction' )
         
         ylims1=ax[0].get_ylim()
         
