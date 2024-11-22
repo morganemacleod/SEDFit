@@ -29,7 +29,7 @@ from astropy.utils.exceptions import AstropyWarning
 warnings.simplefilter('ignore', AstropyWarning)
 
 class SEDFit:
-    def __init__(self,ra=' ',dec=' ',radius=1,frame='icrs',flux_filename='',gaia_filename='',gaia_params='',parallax_sigma=3,
+    def __init__(self,ra=' ',dec=' ',radius=1,frame='icrs',flux_filename='',gaia_filename='',gaia_params='',vizier_filename='',parallax_sigma=3,
                  download_flux=False,download_gaia=False,use_gaia_params=True,use_gaia_xp=True,nstar=1,setmaxav=None,**kwargs):
         
         
@@ -41,8 +41,10 @@ class SEDFit:
                 gaia_filename=crd+'_gaiaxp.fits'
             if gaia_params=='':
                 gaia_params=crd+'_gaiaparams.fits'
-
-            self.fileroot=flux_filename[0:-9]
+            if vizier_filename=='':
+                self.vizier_filename = crd+"_vizier_sed.vot"
+            else:
+                self.vizier_filename = vizier_filename
             
             if (' ' in str(ra)) or (':' in str(ra)): raunit=u.hourangle
             else: raunit=u.deg
@@ -65,10 +67,6 @@ class SEDFit:
                 self.downloadflux(**kwargs)
                 if (len(self.sed)==0):
                     print("Can't download SED for this source. Try again later - if the issue persists no star may be found at this position, or the radius is too large.")
-                    #self.radius=5
-                    #self.downloadflux(**kwargs)
-                    #if (len(self.sed)==0):
-                    #    print("Can't download SED for this source with r=5.")
                     return
                 else:
                     self.sed.write(flux_filename,overwrite=True)
@@ -189,19 +187,24 @@ class SEDFit:
         
         
     def downloadflux(self,**kwargs):
-
+        
         target=str(self.ra)+'%20'+str(self.dec)
+        
+        vot_fn = self.vizier_filename
+        if os.path.exists(vot_fn):
+            os.remove(vot_fn)
+        url = f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}"
+        print("attemting download from:",url)
+        wget.download(url,out=vot_fn)
+        print("\nsuccesfully downloaded vot from:", f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}")
+        print("vot saved to:",vot_fn)
+
         try:
-            #self.sed=Table.read(f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}")
-            vot_fn = self.fileroot+"_vizier_sed.vot"
-            if os.path.exists(vot_fn):
-                os.remove(vot_fn)
-            wget.download(f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}",out=vot_fn)
-            print("succesfully downloaded vot from:", f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}")
             self.sed=Table.read(vot_fn)
         except:
             self.sed=[]
             return
+        
         self.sed['la']=self.sed['sed_freq'].to(u.AA, equivalencies=u.spectral())
         a=np.where((self.sed['la']<15*u.micron) & (self.sed['la']>1000*u.AA))[0]
         self.sed=self.sed[a]
