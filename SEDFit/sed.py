@@ -631,13 +631,14 @@ class SEDFit:
         match=np.interp(self.gaia['la'], self.la,f)
         return match
     
-    def makeplot(self,file='',getplot=False, idx=None):
+    def makeplot(self,file='',getplot=False, idx=None,title=''):
         if idx is None: idx=range(len(self.mags))
         
         plt.rc('font', size=24) 
         fig = plt.figure(figsize=(12,12))
         gs = fig.add_gridspec(2, 1, hspace=0, wspace=0,height_ratios=[3, 1])
         ax=gs.subplots(sharex='col')
+        ax[0].set_title(title)
         ax[0].errorbar(self.sed["la"]/1e4, self.sed["flux"],
                      yerr=self.sed["eflux"],xerr=self.sed["width"]/1e4,
                        linestyle='',zorder=5,c='black',label='photometry')
@@ -683,7 +684,7 @@ class SEDFit:
         
         if file != '':
             plt.savefig(file, bbox_inches="tight",dpi=150)
-        if getplot:
+        elif getplot:
             return ax
         else:
             plt.show()
