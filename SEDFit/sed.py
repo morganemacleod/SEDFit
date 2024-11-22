@@ -22,6 +22,8 @@ import pkg_resources
 import warnings
 import bz2
 import tarfile
+import wget
+import os
 
 from astropy.utils.exceptions import AstropyWarning
 warnings.simplefilter('ignore', AstropyWarning)
@@ -39,6 +41,8 @@ class SEDFit:
                 gaia_filename=crd+'_gaiaxp.fits'
             if gaia_params=='':
                 gaia_params=crd+'_gaiaparams.fits'
+
+            self.fileroot=flux_filename[0:-9]
             
             if (' ' in str(ra)) or (':' in str(ra)): raunit=u.hourangle
             else: raunit=u.deg
@@ -46,7 +50,7 @@ class SEDFit:
             self.c=c
             self.ra=c.ra.value
             self.dec=c.dec.value
-            self.radius=int(radius)
+            self.radius=radius
             self.area=False
 
             if setmaxav is None:
@@ -61,11 +65,11 @@ class SEDFit:
                 self.downloadflux(**kwargs)
                 if (len(self.sed)==0):
                     print("Can't download SED for this source. Try again later - if the issue persists no star may be found at this position, or the radius is too large.")
-                    self.radius=5
-                    self.downloadflux(**kwargs)
-                    if (len(self.sed)==0):
-                        print("Can't download SED for this source with r=5.")
-                        return
+                    #self.radius=5
+                    #self.downloadflux(**kwargs)
+                    #if (len(self.sed)==0):
+                    #    print("Can't download SED for this source with r=5.")
+                    return
                 else:
                     self.sed.write(flux_filename,overwrite=True)
                     
@@ -188,7 +192,13 @@ class SEDFit:
 
         target=str(self.ra)+'%20'+str(self.dec)
         try:
-            self.sed=Table.read(f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}")
+            #self.sed=Table.read(f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}")
+            vot_fn = self.fileroot+"_vizier_sed.vot"
+            if os.path.exists(vot_fn):
+                os.remove(vot_fn)
+            wget.download(f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}",out=vot_fn)
+            print("succesfully downloaded vot from:", f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}")
+            self.sed=Table.read(vot_fn)
         except:
             self.sed=[]
             return
