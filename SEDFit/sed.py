@@ -28,7 +28,7 @@ warnings.simplefilter('ignore', AstropyWarning)
 
 class SEDFit:
     def __init__(self,ra=' ',dec=' ',radius=1,frame='icrs',flux_filename='',gaia_filename='',gaia_params='',parallax_sigma=3,
-                 download_flux=False,download_gaia=False,use_gaia_params=True,use_gaia_xp=True,nstar=1,**kwargs):
+                 download_flux=False,download_gaia=False,use_gaia_params=True,use_gaia_xp=True,nstar=1,setmaxav=None,**kwargs):
         
         
         if (ra!=' ') & (dec!=' '):
@@ -48,9 +48,13 @@ class SEDFit:
             self.dec=c.dec.value
             self.radius=radius
             self.area=False
-            
-            self.getmaxreddening(c)
-            
+
+            if setmaxav is None:
+                self.getmaxreddening(c)
+            else:
+                self.maxav = setmaxav
+                print('manually set max av =',setmaxav)
+                
             if (not download_flux) & (len(glob.glob(flux_filename))>0):
                 self.sed=Table.read(flux_filename)
             else:
