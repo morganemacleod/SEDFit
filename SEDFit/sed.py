@@ -46,7 +46,7 @@ class SEDFit:
             self.c=c
             self.ra=c.ra.value
             self.dec=c.dec.value
-            self.radius=radius
+            self.radius=int(radius)
             self.area=False
 
             if setmaxav is None:
@@ -59,9 +59,13 @@ class SEDFit:
                 self.sed=Table.read(flux_filename)
             else:
                 self.downloadflux(**kwargs)
-                if len(self.sed)==0:
+                if (len(self.sed)==0):
                     print("Can't download SED for this source. Try again later - if the issue persists no star may be found at this position, or the radius is too large.")
-                    return
+                    self.radius=5
+                    self.downloadflux(**kwargs)
+                    if (len(self.sed)==0):
+                        print("Can't download SED for this source with r=5.")
+                        return
                 else:
                     self.sed.write(flux_filename,overwrite=True)
                     
