@@ -24,6 +24,7 @@ import bz2
 import tarfile
 import wget
 import os
+import time
 
 from astropy.utils.exceptions import AstropyWarning
 warnings.simplefilter('ignore', AstropyWarning)
@@ -191,19 +192,40 @@ class SEDFit:
         target=str(self.ra)+'%20'+str(self.dec)
         
         vot_fn = self.vizier_filename
-        if os.path.exists(vot_fn):
-            os.remove(vot_fn)
-        url = f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}"
-        print("attemting download from:",url)
-        wget.download(url,out=vot_fn)
-        print("\nsuccesfully downloaded vot from:", f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}")
-        print("vot saved to:",vot_fn)
+        
 
-        try:
-            self.sed=Table.read(vot_fn)
-        except:
-            self.sed=[]
-            return
+        attempts=0;
+        maxattempts = 4;
+        print("attemting vizier download...")
+        while attempts<maxattempts:
+            url = f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={(attempts+1)*self.radius}"
+            if os.path.exists(vot_fn):
+                os.remove(vot_fn)
+            try:
+                wget.download(url,out=vot_fn)
+                self.sed=Table.read(vot_fn)
+                #raise Exception("didn't work")
+                break
+            except:
+                print("could not download from vizier (or could not open) attempt:",attempts, " of ",maxattempts)
+                attempts += 1;
+                time.sleep(attempts**2)
+
+        if(attempts==maxattempts):
+            url = f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={10*self.radius}"
+            if os.path.exists(vot_fn):
+                os.remove(vot_fn)
+            try:
+                wget.download(url,out=vot_fn)
+                self.sed=Table.read(vot_fn)
+            except:
+                self.sed = []
+                return
+        
+        print("\nsuccesfully downloaded vot from:",url)
+        print("vot saved to and read back:",vot_fn)
+            
+                
         
         self.sed['la']=self.sed['sed_freq'].to(u.AA, equivalencies=u.spectral())
         a=np.where((self.sed['la']<15*u.micron) & (self.sed['la']>1000*u.AA))[0]
