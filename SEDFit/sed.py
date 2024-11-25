@@ -242,6 +242,9 @@ class SEDFit:
         
         self.sed['eflux']=self.sed["sed_eflux"]/self.sed["sed_flux"]/np.log(10)
         self.sed['flux'] =np.log10(self.sed["sed_flux"]*self.sed['la'])
+
+        #MM min eflux = 0.1
+        self.sed['eflux']=np.where(self.sed['eflux']<0.1,0.1,self.sed['eflux'])
         
         self.definefilter(**kwargs)
         a=np.argsort(self.sed['la'])
@@ -249,40 +252,48 @@ class SEDFit:
         self.sed=self.sed[['sed_filter','la','width','flux','eflux']]
         
         
-    def definefilter(self,tmass=True,cousins=True,gaia=True,galex=True,johnson=True,panstarrs=True,sdss=True,wise=True,**kwargs):
+    def definefilter(self,tmass=True,cousins=True,gaia=True,galex=True,johnson=True,panstarrs=True,sdss=True,wise=True,xmm=True,spitzer=True,**kwargs):
         idx=[]
         self.sed['width']=0*u.AA
         if tmass:
             filters=['2MASS:J','2MASS:H','2MASS:Ks']
             width=np.array([0.15,0.24,0.25])/2*u.micron
-            idx.extend(self.selectflux(filters,width))
+            idx.extend(self.selectflux(filters,width,checkpos=False))
         if cousins:
             filters=['Cousins:U','Cousins:B','Cousins:V','Cousins:R','Cousins:I']
             width=np.array([0.0639,0.0928,0.0843,0.1297,0.095])/2*u.micron
-            idx.extend(self.selectflux(filters,width))
+            idx.extend(self.selectflux(filters,width,checkpos=False))
         if gaia:
             filters=['GAIA/GAIA3:G','GAIA/GAIA3:Gbp','GAIA/GAIA3:Grp']
             width=np.array([0.4053,0.2158,0.2924])/2*u.micron
-            idx.extend(self.selectflux(filters,width))
+            idx.extend(self.selectflux(filters,width,checkpos=False))
         if galex:
             filters=['GALEX:FUV','GALEX:NUV']
             width=np.array([0.0269,0.0616])/2*u.micron
             idx.extend(self.selectflux(filters,width,checkpos=False))
         if johnson:
-            filters=['Johnson:U','Johnson:B','Johnson:V','Johnson:R','Johnson:I']
-            width=np.array([0.0619,0.0891,0.0818,0.1943,0.2176])/2*u.micron
-            idx.extend(self.selectflux(filters,width))
+            filters=['Johnson:U','Johnson:B','Johnson:V','Johnson:R','Johnson:I','Johnson:J','Johnson:H','Johnson:K']
+            width=np.array([0.0619,0.0891,0.0818,0.1943,0.2176,0.3,0.2,0.54])/2*u.micron
+            idx.extend(self.selectflux(filters,width,checkpos=False))
         if panstarrs:
             filters=['PAN-STARRS/PS1:g','PAN-STARRS/PS1:r','PAN-STARRS/PS1:i','PAN-STARRS/PS1:z','PAN-STARRS/PS1:y']
             width=np.array([0.1166,0.1318,0.1243,0.09658,0.06149])/2*u.micron
-            idx.extend(self.selectflux(filters,width))
+            idx.extend(self.selectflux(filters,width,checkpos=False))
         if sdss:
             filters=['SDSS:u','SDSS:g','SDSS:r','SDSS:i','SDSS:z']
             width=np.array([0.0555,0.1245,0.1262,0.1291,0.1326])/2*u.micron
-            idx.extend(self.selectflux(filters,width))
+            idx.extend(self.selectflux(filters,width,checkpos=False))
         if wise:
             filters=['WISE:W1','WISE:W2','WISE:W3']
             width=np.array([0.66,1.04,5.51])/2*u.micron
+            idx.extend(self.selectflux(filters,width,checkpos=False))
+        if xmm:
+            filters=['XMM-OT:UVW1','XMM-OT:UVW2']
+            width=np.array([0.1155,0.0649])/2*u.micron
+            idx.extend(self.selectflux(filters,width,checkpos=False))
+        if spitzer:
+            filters=['Spitzer/IRAC:3.6','Spitzer/IRAC:4.5']
+            width=np.array([0.749,1.02])/2*u.micron
             idx.extend(self.selectflux(filters,width,checkpos=False))
             
         self.sed=self.sed[idx]
