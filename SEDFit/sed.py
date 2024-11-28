@@ -223,7 +223,7 @@ class SEDFit:
         
         print("\nsuccesfully downloaded vot from:",url)
         print("vot saved to and read back:",vot_fn)
-            
+
         self.sed['la']=self.sed['sed_freq'].to(u.AA, equivalencies=u.spectral())
         a=np.where((self.sed['la']<15*u.micron) & (self.sed['la']>1000*u.AA))[0]
         self.sed=self.sed[a]
@@ -238,11 +238,11 @@ class SEDFit:
         self.sed["sed_eflux"][a]=self.sed["sed_flux"][a]*0.02
         
         self.sed['eflux']=self.sed["sed_eflux"]/self.sed["sed_flux"]/np.log(10)
-
         self.sed['flux'] =np.log10(self.sed["sed_flux"].value*self.sed['la'])
 
         #MM min eflux = 0.1
-        self.sed['eflux']=np.where(self.sed['eflux']<0.1,0.1,self.sed['eflux'])        
+        self.sed['eflux']=np.where(self.sed['eflux']<0.1,0.1,self.sed['eflux'])
+        
         self.definefilter(**kwargs)
         a=np.argsort(self.sed['la'])
         self.sed=self.sed[a]
