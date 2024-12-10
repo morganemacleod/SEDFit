@@ -31,7 +31,7 @@ warnings.simplefilter('ignore', AstropyWarning)
 
 class SEDFit:
     def __init__(self,ra=' ',dec=' ',radius=1,frame='icrs',flux_filename='',gaia_filename='',gaia_params='',vizier_filename='',parallax_sigma=3,
-                 download_flux=False,download_gaia=False,use_gaia_params=True,use_gaia_xp=True,nstar=1,setmaxav=None,min_eflux=None,**kwargs):
+                 download_flux=False,download_gaia=False,use_gaia_params=True,use_gaia_xp=True,nstar=1,setmaxav=None,**kwargs):
         
         
         if (ra!=' ') & (dec!=' '):
@@ -61,12 +61,6 @@ class SEDFit:
             else:
                 self.maxav = setmaxav
                 print('manually set max av =',setmaxav)
-
-
-            if min_eflux is None:
-                self.min_eflux=0.0
-            else:
-                self.min_eflux=min_eflux
                 
             if (not download_flux) & (len(glob.glob(flux_filename))>0):
                 self.sed=Table.read(flux_filename)
@@ -196,14 +190,15 @@ class SEDFit:
     def downloadflux(self,**kwargs):
         
         target=str(self.ra)+'%20'+str(self.dec)
+<<<<<<< HEAD
         vot_fn = self.vizier_filename
         
 
         attempts=0;
-        maxattempts = 2;
+        maxattempts = 4;
+        print("attemting vizier download...")
         while attempts<maxattempts:
-            url = f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius*(attempts+1)}"
-            print("attemting vizier download from url:", url)
+            url = f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={(attempts+1)*self.radius}"
             if os.path.exists(vot_fn):
                 os.remove(vot_fn)
             try:
@@ -217,7 +212,7 @@ class SEDFit:
                 time.sleep(attempts**2)
 
         if(attempts==maxattempts):
-            url = f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={np.round(self.radius/2,1)}"
+            url = f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={10*self.radius}"
             if os.path.exists(vot_fn):
                 os.remove(vot_fn)
             try:
@@ -229,7 +224,14 @@ class SEDFit:
         
         print("\nsuccesfully downloaded vot from:",url)
         print("vot saved to and read back:",vot_fn)
-
+=======
+        try:
+            self.sed=Table.read(f"https://vizier.cds.unistra.fr/viz-bin/sed?-c={target}&-c.rs={self.radius}")
+        except:
+            self.sed=[]
+            return
+>>>>>>> upstream/main
+            
         self.sed['la']=self.sed['sed_freq'].to(u.AA, equivalencies=u.spectral())
         a=np.where((self.sed['la']<15*u.micron) & (self.sed['la']>1000*u.AA))[0]
         self.sed=self.sed[a]
@@ -244,12 +246,16 @@ class SEDFit:
         self.sed["sed_eflux"][a]=self.sed["sed_flux"][a]*0.02
         
         self.sed['eflux']=self.sed["sed_eflux"]/self.sed["sed_flux"]/np.log(10)
+<<<<<<< HEAD
 
         self.sed['flux'] =np.log10(self.sed["sed_flux"].value*self.sed['la'])
-        
+
         #MM min eflux = 0.1
-        self.sed['eflux']=np.where(self.sed['eflux']<self.min_eflux,self.min_eflux,self.sed['eflux'])
+        self.sed['eflux']=np.where(self.sed['eflux']<0.1,0.1,self.sed['eflux'])        
+=======
+        self.sed['flux'] =np.log10(self.sed["sed_flux"].value*self.sed['la'])
         
+>>>>>>> upstream/main
         self.definefilter(**kwargs)
         a=np.argsort(self.sed['la'])
         self.sed=self.sed[a]
